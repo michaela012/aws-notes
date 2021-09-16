@@ -1,0 +1,89 @@
+
+# Overview (21)
+- DB type options:
+	- RDBMS (= SQL, OLTP): RDS, Aurora - great for joins
+	- NoSQL: DynamoDB (~json), ElastiCache (key/val pairs), Neptune (graphs)
+	- Object store: s3, glacier
+	- Data Warehouse (= SQL Analytics/ BI): Redshift (OLAP), Athena
+	- Search: ElastiSearch (json) - free text, unstructured searches
+
+
+# DBs (9, 19)
+- RDS (relational database service)
+	- managed db service, SQL as query lang. 
+	- Options: MySQL, Postgres, MariaDB, Oracle, Microsoft SQL Server, Aurora (aws proprietary db)
+	- Why RDS vs deploying db on EC2?
+		- automated provisioning, OS patching, backups/ PiT restore, monitoring, scaling (vert & horizontal), read replicas for ^ read performance, multi-AZ setup for disaster recovery, maintenance windows for upgrades, storage backed by EBS (gp2 or io1)
+	- backups, snapshots, autoscaling
+		- backups
+			- full daily backups in maint. window, transaction logs every 5 mins, PiT restore to any of these. 7 day default retention, can incr. up to 35 days.
+		- snapshots: like backups but trigger manually, retain indefinitely
+		- storage auto scaling: useful for unpredictable workloads, supported by all db engines. must set max storage threshold.
+	- RDS read replicas v. multi-AZ
+		- RR: replicate db (async), replications are read-only. Up to 5 read replicas, no fee if original and RR are in same region. Useful for analysis without slowing down/ overloading main db.
+		- Multi-AZ (disaster recovery): synchronous replication. One DNS name -> automatic failover. Only for standby so no interaction with backup db unless failover happens. Zero downtime to go from single to multi-AZ.
+	- security
+		- encryption
+			- @ rest encryption w/ KMS: define at launch. if master db is not encrypted, replicas cannot be.
+			- in flight encryption w/ SSL certs: provide SSL options w/ trust cert. when connecting to db
+			- encrypting backups-- if db is encrypted/ unencrypted then backup is too, but can create & encrypt snapshot of unencrypted db, and restore db from encrypted snapshot.
+		- network security: deploy in private subnet, use security groups (same as EC2)
+		- Access management
+			- IAM pol to control who can manage ARS (through RDS API)
+			- traditional uname/pwd to log in to db. Or IAM based auth but only w/ postgresQL & RDS MySQL: uses auth token, valid for 15mins.
+- Aurora
+	- AWS proprietary db, supports postgres and mySQL. 
+	- why use? 
+		- AWS cloud optimized. On RDS, 5x performance over mySQL & 3x over postgres. <= 15 read replicas, failover instantaneous, HA, self-healing. Storage auto grows from 10gb up to 64TB
+	- Aurora Serverless
+		- automated db instantiation & scaling based on usage. Good for infrequent/ intermittent workloads-- pay per second.
+	- Aurora Multi-Master
+		- every aurora inst. node does read/write (vs promoting a read replica in failover)-- compare to RDS multi-AZ where backup db is standby only.
+	- Aurora Global DB
+		- <= 5 secondary regions w/ <= 16 read replicas in each. Decreases latency s.t. promoting to other region for disaster recovery has RTO <= 1min.
+	- Aurora Machine Learning
+		- add ML based predictions to your apps via SQL- integrates w/ AWS ML services:
+			- Amazon Sage-Maker: use w/ any ML model
+			- Amazon Comprehend: for sentiment analysis
+- ElastiCache
+	- for managed Redis or Memcached (like RDS for caches)
+	- Redis v. Memcached
+		- Redis: multi AZ, w auto-failover, read replicas to scale reads, high avail., data durability using AOF persistence, backup and restore features
+		- Memcached: multi-node partitioning of data (sharding), no HA (no replication), non-persistent, no BU&Restore, multi-threaded architecture
+	- Cache security
+		- all caches do *not* support IAM auth. IAM policies used only for AWS API-level security.
+		- Redis AUTH: can set "pwd/token" when you create cluster-- added security layer over security groups. Supports SSL Encryption.
+		- Memcached: supports SASL-based auth.
+	- patterns for ElastiCache: Lazy loading, write-through, session-store.
+		- Lazy Loading: all read data is cached; data can become stale in cache.
+		- write-through: adds or updates cache data when written to a db- no stale data.
+		- Session-store: store temp session data in cache (using TTL features)
+	- feature: Redis Sorted Sets
+		- guarantees uniqueness & element ordering. 
+		- When elements added, they're ranked in RT and added in correct order. E.g. Real time leaderboard-- don't need to program in application code.
+- DynamoDB ^0b8c6b
+	- fully managed NoSQL DB, IAM integration, HA- replication across 3 AZ, autoscaling/scales hugely, distributed DB. Millions of reqs/sec, trillions of rows, 100s of TBs of storage. Global tables, fully replicated (active-active), Backup & PiT restore avail.
+	-  Provision throughput: RCU and WCU (can set up autoscaling)
+		-  Read Capacity Units (RCU): 1 RCU = 1 strongly consistent read of 4kb/sec, or 2 eventually consistent
+		-  Write Capacity Units (WCU): 1 WCU = 1 write of 4 kb/sec
+	-  Security
+		-  VPC endpoints (access w/o public internet), full access control w/ IAM, KMS, SSL/TLS
+	-  DAX (dynamoDB accelerator)
+		-  cache for dynamodb. Writes go though to db, microsecond latency for cached reads and queries-- solves hot key prob (too many reads)
+	-  DynamoDB Streams
+		-  changes to DB can end up in stream, which can be read by lambda for...
+			-  reacting to changes in real time (i.e. immediate welcome email to new users)
+			-  analytics
+			-  even to impl x-region-replication
+	-  Transactions: all or nothing operations-- e.g. insert, update & delete and either all work or none will
+	-  On Demand: WCU/RCU scales automatically- removes need for capacity planning. 2.5x more expensive so use only when spikes are unpredictable
+- Redshift
+	- based on postgres, *not* used for OLTP-- rather for OLAP (online analytical processing)
+	- 10x better performance than other data warehouses- Massively Parallel Query Execution (MPP)
+	- column (not row) based storage, SQL interface for queries.
+- AWS Glue
+	- managed extract/transform/load (ETL) service- to prepare/transform data for analytics. Fully serverless.
+- Neptune
+	- fully managed graph db. HA across 3 AZ, <= 15 read replicas, PiT recovery, cont backup to S3, support KMS & HTTPS
+- ElastiSearch
+	- search any field, even partial matches. use as complement to another db, e.g. dynamoDB

@@ -1,0 +1,75 @@
+- CIDR: IPv4 for AWS networking
+	- two components: base IP (`X` portion) and subnet mask (`/YY`)- e.g.  `XX.XX.XX.XX/YY`
+		- subnet mask defines how many *bits* can change in the IP. So `/32` => no bits can change, `/0`=> all bits can change. 
+		- syntax? `/32`=2^0, `/31`=2^1,  ->  `/n`=2^(32-n) bits can change.
+	- Internet Authority defined private IPv4 ranges:
+		- 10.0.0.0 -> 10.255.255.255 (i.e. 10.0.0.0/8): use for big networks
+		- 172.16.0.0 -> 172.31.255.255 (i.e. 172.16.0.0/12): default AWS (max CIDR size in AWS is `/16`)
+		- 192.168.0.0 -> 192.168.255.255 (i.e. 192.168.0.0/16): for home networks
+- Default VPC: 
+	- all new accts have one. New instances launched here by default. Incl 3 subnets and 1 route table, int. GW, and network ACL (which allows all inbound and outbound)
+- subnets: specific to AZ, 5 IPs reserved by AWS
+	- reserved IPs are first 4 and last one: network addr., VPC router, mapping to AWS provided DNS, general future use, network broadcast addr (reserved bc broadcast is not supported in a VPC)
+- Internet Gateways and Route Tables 
+	- IG allows pub. subnet in VPC to connect to internet. Must be set up separately from VPC. One VPC -> one IG & vice versa.
+	- for int access: must configure RT to point to IG.
+- NAT Gateway (new) and NAT Instances (outdated)
+	- for connecting private subnet to internet (can't use IG bc then they'd be publicly accessible). For both, must launch in public subnet and configure RT to route traffic from private subnet to it
+	- NAT Gateway:
+		- flow: private subnet ->(RT)-> NAT ->(RT)-> IG.
+		- resilient but one-AZ. For ^ fault tolerance, create NAT GWs in mult. AZ. Same structure in each. No cross AZ failover needed bc if AZ goes down it doesn't need a NAT-- basically just don't config all AZs to use the same NAT, as NAT would be lost if that AZ goes down. 
+	- NAT Instances:
+		- must disable EC2 flag 'source/destination check' & attach elastic IP
+- Network ACLs and Security Groups
+	- Traffic hits in this order: NACL -> subnet -> SG -> EC2 inst. So evaluated at both NACL and SG levels
+		- SG: stateful. If inbound rules allow traffic, then corresponding outbound traffic will always be allowed-- outbound rules won't be evaluated. 
+		- NACL: stateless. Both inbound and outbound rules always evaluated.
+	- NACL: like a firewall for traffic to/from subnet. One NACL/subnet. All NACL rules are assigned a number; in case of conflict, lower nums take precedence.
+- VPC Peering
+	- Directly, privately (via AWS network) connect two VPC so they act as though they're in the same subnet. Can be inter-region, cross-account, and reference SG of paired VPC. Must not have overlapping CIDR.
+	- To set up: est VPC peering connection btw ones you want to connect, then update RTs in each VPCs subnet
+	- not transitive, i.e. A->B->C != A->C.
+- VPC Endpoints
+	- allow you to connect to AWS services using private AWS network rather than public www. Scales horizontally & is redundant. Removes need for IGW, NAT, etc. for this use case.
+	- Two flavors...
+		- VPC endpoint interface: Userd for most AWS services. Provisions an ENI (priv IP addr.) as an entrypoint. Must attach SG.
+		- VPC endpoint gateway: for s3 and dynamoDB. Provisions a target and must be used in a RT.
+- VPC Flow Logs
+	- capture info about IP traffic going to your instances. Log data can go straight to S3, CloudWatch logs; use Athena (S3) or CloudWatch Log Insight to query.
+	- Three flavors...
+		- Subnet flow logs, ENI flow logs, VPC flow logs (VPC logs include logs for both subnet and ENI)
+- Bastion Hosts
+	- ssh into private instances: bastion in pub. subnet, which connects to all private subnets.
+	- must tighten BH security group! Allow only *port 22* traffic from the IP you need.
+- Connect on prem data center to cloud...
+	- Site to Site VPN: on prem Customer Gateway, VPC side VPN Gateway (VPG: virtual private gateway), connected by Site to Site VPC Connection
+		- VPN Gateway: attach to VPC from which you want to create the site to site connection.
+		- Customer Gateway: either software of a physical device. 
+			- IP addr: either static, internet-routable IP or, if behind NAT (on your own network, not AWS NAT), use pub IP of the NAT.
+- Direct Connect (DX)
+	- provides dedicated, private connection from a remote network to VPC. Allows access to pub (s3) and priv (ec2) resources on same connection. 
+		- Why? increase bandwidth for working w/ ^ data, more consistent network, helpful for hybrid env.
+		- need?: dedicated connection btw DC and AWS DX locations, VPG on your VPC
+		- lead times often >1month to set up
+		- encryption? By default not encrypted but possible to set up with DX & VPN.
+		- resiliency? high resiliency is a connection at two separate DX locations, max resiliency is 2 DX locations w/ 2 connections at each
+	- two connection types...
+		- dedicated: 1 or 10 gb capacity, physical ethernet port dedicated to a customer
+		- hosted: capacity changeable on demand (50mbps to 500 to 10gbps), connection reqs made via AWS DX partners
+- Egress Only IG (IPv6 only)
+	- same function as NAT but for IPv6 (NAT = IPv4): access to int. for private instances. Allows access *to* int only, instances not reachable *from* int. 
+	- why different? All IPv6 are publicly accessible! No private ranges like IPv4
+	- req. editing RT to direct any IPv6 destination to target the EOIG. So that covers all outbound routes.
+- AWS Private Link (aka VPC Endpoint Services)
+	- most secure and scaleable way to expose a service to 1000s of VPCs (cross account possible). Simplest, as doesn't require VPC peering, IG, NAT, RTs...
+	- reqs network load balancer in service VPC and ENI in customer VPC
+- AWS VPN CloudHub
+	- secure connection btw sites if you have mult. VPN connections. Low cost hub&spoke model. 
+	- vpn connection, so over public int. but encrypted.
+- Transit Gateway
+	- for transitive peering btw 1000s of VPC & on prem; hub&spoke connection. Used to simplify network topology, e.g. remove need for peering btw all VPC-- just connect to TG.
+	- other use case: ^^ bandwidth of your connection to AWS. 
+		- "site-to-site VPN ECMP." ECMP := Equal-cost multi-path routing, routing strategy where packets can be forwarded to a single destination over mult. best paths w/ equal routing priority. Allows traffic to be split more uniformly across whole network, thus increasing bandwidth. 
+	- can set up cross region, cross acct. RTs limit which VPC can talk to which others.
+	- **only** service that supports IP Multicast.
+

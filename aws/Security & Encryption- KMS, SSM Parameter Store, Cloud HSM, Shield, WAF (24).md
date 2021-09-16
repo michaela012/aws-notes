@@ -1,0 +1,60 @@
+- KMS (Key Management Service)
+	- fully integrated with IAM for auth.
+	- two CMK (customer master key) types:
+		- Symmetric (AES-256 keys)
+			- single key used to both encrypt and decrypt. You never see unencrypted key-- must call KMS API to use. 
+			- Used by AWS services int. w/ KMS. Necessary for envelope encryption
+		- Asymmetric (RSA & ECC key pairs)
+			- public (encryption) and private (decryption) key pair used for en-/de-crypt or sign/verify ops. 
+			- Can't get unencrypted private key. Use case: encryption outside AWS by users who can't call KMS api
+	- three ways to get CMKs:
+		-  AWS managed service default CMK: free
+		-  User keys created in KMS: $1/month
+		-  User keys imported (must be 256-bit symmetric key): $1/month
+	-  Envelope encryption
+		-  KMS can only encrypt <= 4kb of data/call. >4kb requires EE.
+	-  KMS keys are region-bound. How to share encrypted EBS vols? 
+		-  Cross region: snapshot in same region (snapshot always has same encryption) -> copy snapshot to new region, specifying a new key -> new col from snapshot will use new key.
+		-  Cross account: create snapshot -> attach KMS key policy to auth x-account access -> share encrypted snapshot -> in target acct, create copy of snapshot, encrypting w KMS key from your acct -> create vol from snapshot
+	-  KMS key policies: needed to control access. Default is complete access to key given to root user. In custom policy can define users/ roles that can access and administer key (useful for cross acct access)
+	-  KMS Key Rotation: Automatic or Manual
+		-  automatic key rotation: can only enable for customer (not AWS) managed symmetric CMK. Every one year (cannot change). New key has same CMK-ID, only backing key is changed. Old backing key stored for decryption purposes.
+		-  manual key rotation: when you want rotation != 1yr. New key has different CMK ID; best practice is to use aliases to hide change of key for the app.
+-  SSM Parameter Store
+	-  secure storage for config & secrets, optional encryption w/ KMS. Serverless, scalable, durable. Version tracking. 
+	-  Parameters Policies- only for advanced parameters (paid): assign parameter TTL to force updating/ deleting sensitive data
+-  AWS Secrets Manager
+	-  new than SSM PS, focused on storing secrets.
+	-  Can force secret rotation every x-days, can automate secret generation w/ Lambda.
+	-  integration w Amazon RDS to sync secrets btw db & secrets manager. Encrypted w/ KMS.
+-  Cloud HSM
+	-  encryption alternative...
+		-  KMS => AWS manages software for encryption
+		-  CloudHSM => AWS provides encryption *hardware*, use your own client for the encryption (cloud HSM software)
+	-  HSM := Hardware Security Module: you manage your own encryption keys entirely. Tamper resistant. 
+	-  C HSM clusters spread across multi-AZ (HA)- you must set up. Supports sym & asym encryption.
+-  AWS Shield: DDOS Protection
+	-  AWS Shield Standard: 
+		-  free and active for every AWS customer. Protection for SYN/UDP Floods, reflection attacks, other layer 3/ layer 4 attacks.
+	-  Shield Advanced
+		-  protect for more sophisticated attacks, on EC2, ELB, CloudFront, Global Accelerator, R53. Gives 24/7 access to AWS DDOS response team.
+		-  $3k/month/org; any increased costs from usage spikes due to DDOS are waived.
+-  AWS WAF (web application firewall)
+	-  protect web apps from common layer 7 (HTTP) exploits (SQL injection, XSS). Can deploy on ALB, API GW, or CloudFront
+	-  must define web ACL (access control list): rules can include IP addresses, http headers, http body, or URI strings. Can put size contraints on queries, use geo-match  to block specific countries, apply rate-based rules (e.g. count occurrence of events/IP) for DDoS protection
+-  AWS Firewall Manager
+	-  manage all rules of all WAFs w/in your org
+	-  define common set of security rules
+		-  WAF rules (ALB, API GWs, CloudFront)
+		-  AWS Shield Advanced (ALB, CLB, Elastic IP, CloudFront)
+		-  Security Groups for EC2 & ENI resources in VPC
+-  Amazon GuardDuty
+	-  intelligent thread discovery service to protect AWS acct- anomaly detection analyzing CT Logs, VPC Flow Logs, DNS logs
+	-  Set up CloudWatch event rules to be notified in case of findings (can target Lambda or SNS)
+	-  Dedicated findings for cryptocurrency attacks
+- Amazon Inspector: Automated Security Assessments for EC2 inst. checks directly from w/in the OS
+	- analyze the running OS against known vulnerabilities & against unintended network acessibility
+	- to use, install AWS inspector Agent on OS of the EC2 inst
+- Amazon Macie
+	- fully managed data security and data privacy service
+		- uses ML pattern matching to discover & protect sensitive data in AWS- e.g. can ID & alert you to PII (personally identifiable info) in your s3 bucket

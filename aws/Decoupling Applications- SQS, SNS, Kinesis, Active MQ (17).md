@@ -1,0 +1,49 @@
+- communication btw apps is either synchronous or async (decoupled)
+	- sync: app -> app. async (i.e. decoupled): app -> middleware -> app
+	- when to use async? If you'll have sudden spikes of traffic that could overload one of your apps. 
+- Async options...
+	- SQS (queue model)
+	- SNS: publish/ subscribe model
+	- Kinesis: real-time streaming model
+- SQS:	simple queuing service
+	- "producers" add to queue, "consumers" poll messages from queue
+	- Standard Queues
+		- fully managed. unltd throughput and # messages in queue. Retention btw 4-14 days. Low latency. Message size must be < 256kb. Can have multiple consumers (so duplicate or out of order messages can occur)
+		- encryption: in flight w/ HTTPS, @ rest with KMS keys
+		- regulate access w Access Controls (IAM policies on SQS API) & SQS Access Policies (like s3 bucket policies)
+		- message visibility timeout: how long message is invisible after being polled by a consumer-- i.e. the amt of time the consumer has to process & delete the message before it could be polled again or by another consumer. 
+			- consumer can add time by calling ChangeMessageVisibility API
+	- Dead Letter Queues
+		- what if every time a message is polled the processing fails? Can set re-poll limit to prevent cycling. When exceeded, messages go to DLQ (useful for debugging)
+	- SQS Request-Response Systems
+		- to decouple request/response. Multiple queue setup, some for requests and some for responses.
+		- must attach a header for a correlation ID, to know which res. goes w/ which request. 
+		- SQS Temporary Queue Client: implement w/ this to avoid managing implementation details yourself. Leverages virtual queues instead of creating/deleting SQS queues (so is more cost effective)
+	- SQS Delay Queues
+		- delay messages btw 0 - 15 mins so consumers can't see it immediately. Can set default on queue, or override default w/ DelaySeconds parameter.
+	- FIFO Queue: one consumer. guarantees order but limits throughput. If you use mult. groups (dig group IDs to send msgs to) then can have more consumers.
+	- SQS w/ autoscaling group:
+		- EC2 insts poll from queue. Use if you want to scale the num instances if they aren't getting through messages quickly enough or vice versa. 
+		- How? set cloudwatch custom metric for queue length. Too many messages -> alarm -> triggers scaling policy in autoscaling group.
+- SNS: simple notification service
+	- send messages to SNS-- to one SNS topic. Can set as many receivers as you want to listen to that topic; they each get every event notification. SQS can be one of the receivers.
+	- can set filtering policies so certain subscribers only receive a subset of messages.
+- Kinesis: collect, process, & analyze data in real time.
+	- 4 components...
+		- Kinesis Data Streams: capture, process, and store data streams
+		- Kinesis Video Streams: capture, process, and store video streams
+		- Kinesis Data Firehose: load data streams into AWS data stores
+		- Kinesis Data Analytics: analyze data streams w/ SQL or Apache Flink
+	- Data Streams:
+		- streams composed of 'shards'-- more shards -> more allowed throughput
+		- producers send records (composed of 1.) a partition key indicating which shard and 2.) a data blob <= 1mb) into the stream. Consumers read the record, now also w/ a sequence #. 
+		- two consumption mechanisms:
+			- shared: 2 mb/s per shard for ALL consumers
+			- enhanced: 2 mb/s per shard PER consumer. more $, more throughput.
+		- Retention btw 1-365 days. Data is immutable-- can't be deleted once in Kinesis. Billed per shard provisioned, as many shards as you want.
+	- Data Firehose:
+		- to capture, transform, and store data into target destination. **batch writes.**
+			- destinations in AWS: S3, redshift (copy through s3), elasticSearch
+			- destinations in 3rd party partners: datadog, splunk, new relic, mongo DB, or any custom destination w/ an HTTP endpoint
+		- fully managed (pay only for data going through), & near real time: 60sec latency min for non-full batches, batch min is 32mb
+- Amazon MQ: since SQS and SNS are AWS-provisioned and cloud-native, orgs transitioning to AWS cloud may not want to migrate their existing version to one of these. In that case, use AWS MQ: managed Apache Active MQ.

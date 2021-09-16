@@ -1,0 +1,23 @@
+- R53 is a managed DNS (Domain name system): rules and records telling how to reach a server through its domain name	
+	- browser sends req to get IP from domain name from r53, then sends HTTP req to app server at that IP.
+- 4 common AWS records:
+	- A: maps hostname to IPv4
+	- AAAA: IPv6
+	- cname: hostname to other hostname
+		- can only point to non-root domain
+	- alias: hostname to AWS resource
+		- any domain of aws resource
+- DNS records TTL (time to live)
+	- how long browser caches result of DNS query, so as not to overload the DNS. Val specified in R53 response.
+	- tradeoff between less DNS traffic and greater chance of outdated records
+- routing policies (7 types)
+	- simple: if mult IPs are registered, r53 returns all and client chooses at random
+	- weighted: return only one IP and set the % each is returned
+	- latency: redirect to server with lowest latency for the client (often but not always the closest)
+	- failover: 2 endpoints-- primary and secondary (used if primary fails). Req's a health check to monitor primary; if HC fails, R53 starts sending traffic to secondary. 
+	- geolocation: routing based on user location, you specify where traffic from certain countries should go
+	- geoproximity: routing based on user and resource location. Set bias (-99 - 99) to preference resources over others. Req's r53 Traffic Flow.
+	- multivalue: improvement over simple-- allows you to associate health checks and only return healthy endpoints (<=8)
+- to use 3rd party domains w/ R53
+	- 1.) create Hosted Zone in R53
+	- 2.) update NS records on 3rd party site to use R53 name servers

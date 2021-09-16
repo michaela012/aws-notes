@@ -1,0 +1,34 @@
+- Serverless: in AWS, just means you don't manage your own servers
+- AWS Lambda
+	- serverless function execution. Pay per request and compute time. Provision up to 10gb of RAM (incr. RAM also improves cpu and netwoork)
+	- Lambda limits *per region*
+		- Execution: Mem allocation: 128mb-10gb, max execution time: 900secs (15mins), environment vars: 4kb, disk capacity in 'function container' (`/tmp` folder): 512mb, concurrent executions: 1000 (soft limit)
+		- Deployment: function compressed (.zip) size max: 50mb, uncompressed deployment size (code & dependencies): 250mb-- use `/tmp` folder dir to load other files at startup
+	- Lambda @ Edge
+		- deploy lambdas alongside CloudFront CDN
+		- why? what can you modify?
+			- change cloudfront requests and responses- both viewer (client) req & res & origin req & responses
+- DynamoDB: [[Databases (21, 9, 19)#^0b8c6b|DynamoDB]]
+- API Gateway (API GW)
+	- serverless offering allowing you to create RESST APIs that will be accessible to client, and can proxy requests to Lambda functions
+	- support for:
+		- websocket protocol, API versioning, dif environments (dev, qa, prod, etc), security (authentication & authorization), API keys, request throttling, swagger/ Open API import, transform & validate requests & responses, generate SDK and API specifications, chache API responses
+	- integrates w/:
+		- lambda functions, HTTP (e.g. ALB, on prem HTTP API), AWS services- any AWS API
+	- 3 ways to deploy (endpoint types)...
+		- edge-optimized (default): for global clients. API GW still lives in one region but reqs routed through CloudFront Edge locations- improves latency
+		- Regional: for clients w/in same region
+		- Private: only accessed from your VPC, using interface VPC endpoint (ENI)
+	- security
+		- IAM Permissions: create auth policy and attach to user/role, API GW verifies IAM permissions passed by calling app. Leverages 'sig v4'- IAM credentials in headers
+		- Lambda authorizer (formerly custom authorizer): uses Lambda to validate token in header (e.g. oauth, saml). can cache result. Returns IAM policy for user. 
+		- Cognito User Pools: user lifecycle fully managed by cognito. *only authentication*, not authorization
+- AWS Cognito
+	- give users an identity so they can interact with app
+	- 3 flavors...
+		- User Pools: sign in functionality for app users, integrate w API GW
+		- identity pools (federated ID): provide AWS credentials to users to they can access AWS resources directly. Integrate w/ User Pools as an ID provider.
+		- Sync (deprecated, replaced by App Sync): synchronize data from app to cognito
+- AWS SAM (serverless application model)
+	- framework for dev. & deploying serverless apps that helps fun Lambda, API GW, and DynamoDB locally for debugging.
+	-  all config is YAML. Use CodeDeploy for quickly deploying Lambda funcs.

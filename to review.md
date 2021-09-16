@@ -1,0 +1,25 @@
+- cloudfront
+- VPC
+- redshift
+- aws glue
+	- managed ETL service
+- aurora global vs multimaster
+	- global - RRs, multimaster--r/w to all
+- bastion hosts
+	- like NAT in that it allows inst in priv subnet to be connected to int-- but BH is for allowing SSH *into* instances, whereas NAT GW is for allowing requests from inst. to go *out*
+- eventbridge
+	- extends on cloudwatch events
+- fargate
+	- serverless compute engine for running containers (ecs or eks)
+- cloudformation
+	-  build and rebuild your applicationo resources
+- opsworks
+	- config management, managed v of chef and puppet, which allow you to use code to automate the config, deployment, and management of your servers
+- xray
+	- analyze performance of ur app and underlying services. End to end view of reqs through the application.
+- data sync
+	- online data transfers from on prem to AWS (not recurring/ continuous)
+- aws firewall manager
+	- AWS Org feature to consolidate management of firewall rules across accounts
+- NAT GW vs IG
+	- IG gives public subnet access to int. NAT intermediates for private subnet (so as to keep it private): Private sub -> RT -> NAT (in pub subnet) -> RT -> IG.

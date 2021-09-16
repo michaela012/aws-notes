@@ -1,0 +1,25 @@
+- Cloudfront
+	- CDN (Content Delivery Network). Content is cached at the edge, => improved read performance. also provides DDoS protection, int. w/ AWS Shield, WAF.
+		- can expose external HTTPS endpoints & talk to internal HTTPS backends over private AWS network
+	- possible origins: 
+		- s3: for distributing/ caching @ edge or as ingress for uploading to s3. enhanced security w/ CloudFront Origin Access Identity (OAI) - virtual ID given to CF distribution, use in access policies
+		- custom origin (HTTP): e.g. EC2 inst (since HTTP must be public, and must config SG to allow IPs of all edge locations), ALB (must be public, then EC2 can be private), S3 static website, any HTTP backend (e.g. on prem HTTP server)
+	- offers GeoRestriction, by either allow or blocklisting by country (determined using 3rd party Geo-IP db)
+	- CloudFront signed URL/ signed cookie
+		- signed URL: access to an individual file (one url/file)
+		- signed cookie: access to mult files
+		- CF Signed URL vs S3 pre-signed URL?
+			- CF signed URL: allow access to path regardless of origin, account-wide key pair that only root can manage, can filter by IP/path/date/expiration, leverage caching features
+			- S3 presigned url: issue a request *as the person* who pre-signed the url; uses the IAM key of the signing principal.
+	- Price Classes: reduce # of avail edge locations for a cost reduction. 3 tiers: All, price class 200 (most, excluding most expensive),& price class 100 (only cheapest)
+	- Multiple Origin: route to different kinds of origins based on content type or path pattern
+	- Origin Groups: to increase HA & do failover in case one origin has failed. Set both primary origin (always used) and secondary (only used in case of failover)-- e.g. 2 ec2 inst, 2 s3 buckets w/ CRR
+	- Field Level Encryption: protect users sensitive info through application stack (additional security)
+		- sensitive info sent by user is encrypted @ the edge (i.e. closer to user)- so asymmetric encryption. 
+		- How? specify set of fields (<=10) in POST reqs that should be encrypted, & public key w/ which to encrypt them. Web server will need to decrypt w/ private key.
+- AWS Global Accelerator
+	- use case: users geographically far from our servers. We want to go over AWS network as much as possible.
+	- Leverages Anycast IP concept to route calls to nearest edge location, and go though internal AWS network from edge -> application servers.
+		- Anycast IP: mult servers have same IP & traffic is routed to nearest-- vs. unicast IP, where each server has own IP
+	- 2 Anycast IP created for app-- secure, since only these 2 IP need whitelisted. DDoS protection through Shield, incl health checks.
+	- Works w/ elastic IP, EC2 inst, ALB, NLB, public or private

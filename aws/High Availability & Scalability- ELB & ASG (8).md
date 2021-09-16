@@ -1,0 +1,42 @@
+- High availability (HA) and scalability
+	- ^ availability := fault tolerant, e.g. multi AZ
+	- scalability-- vertical scalability: increase the size of the instance. Horizontal scalability: increase the # of instances.
+- ELB (elastic load balancers)
+	- load balancers: servers that forward traffic to mult servers (ec2 instances) downstream
+	- benefits: health checks for instances )so can handle failures), provide SSL termination (HTTPS), enforce stickiness w/ cookies, HA across AZ, separate public (from int to LB) and private (from LB to instance) traffic
+	- 4 types of managed load balancers...
+		- Classic LB (CLB)- v1: Supports HTTP, HTTPS, TCP, gives fixed hostname-- dif CLB for each app.
+		- Application LB (ALB)- v2: HTTP, HTTPS, websocket, gives fixed hostname (`xxx.region.elb.amazonaws.com`)
+		- Network LB (NLB)- v2: TCP, TLS (secure TCP) & UDP
+	-  ALBs (Layer 7)
+		-  allows routing to mult HTTP apps across machines (machines grouped in target groups (TGs)), and mult. apps on same machine (using containers- ECS). Supports redirects, e.g. HTTP -> HTTPs.
+		-  route to dif. TGs based on URI, hostname, query string, or headers. Port mapping feature to redirect to dynamic port in ECS. 
+		-  TGs can have: ec2 inst, ECS tasks, lambda functions, IP addresses (must be private IPs)
+		-  application servers don't see client IP directly. Instead, client info is inserted in headers:
+			-  IP: `X-Forwarded-For`
+			-  Port: `X-Forwarded-Port`
+			-  Protocol: `X-Forwarded-Proto`
+	-  NLBs (Layer 4)
+		-  lower level than ALB, so better performance. 
+		-  one static IP per AZ. supports assigning Elastic IP. 
+	-  LB Stickiness
+		-  stickiness: same client always redirected to same inst. behind LB. Possible with CLB and ALB
+	-  Cross Zone load balancing
+		-  if turned on, ELB in *any* AZ distributes traffic across instances in *all* AZs. Otherwise, ELB distributes traffic only across inst in its own AZ. 
+		-  W/ ALB: always on. NLB: disabled by default, enable for a cost. CLB: default depends on how created, no extra $ if on.
+	-  SSL/ TLS
+		-  SSL enables encryption in flight. TLS is newer version. 
+		-  SNI (server name indicator) solves prob of loading mult SSL certs to one web server (to serve mult sites). Req's the client to indicate hostname of target server in initial SSL handshake. Server will find correct cert, or return default. Not supported by CLB.
+	-  Connection Draining, aka Deregistration Delay
+		-  := time. to complete in-flight reqs while the inst is deregistering/ unhealthy (bc if inst. is terminated before these reqs finish, users will receive error)
+		-  ELB stops sending new reqs to that instance during this time. Default is 300 secs, set from 0-3600 secs. 
+-  ASG (auto scaling group)
+	-  add/remove EC2 inst. in proportion to application load (set min/max # of inst). Can automatically register new inst to an ELB.
+	-  scaling policies- set what scaling is based on.
+		-  CloudWatch Alarms
+		-  rules directly managed by EC2 
+		-  Schedule, for predicted loads
+		-  3 flavors:
+			-  Target Tracking Scaling: e.g. I want CPU usage to stay ~40%
+			-  Simple Step Scaling: e.g. when alarm is. triggered, add 2 instances
+			-  Scheduled Actions: e.g. incr. min capacity to 10 inst. @ 5pm Friday

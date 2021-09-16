@@ -1,0 +1,102 @@
+{
+  "main": {
+    "id": "9b7512be07f84590",
+    "type": "split",
+    "children": [
+      {
+        "id": "76082cf73e43bd73",
+        "type": "leaf",
+        "state": {
+          "type": "markdown",
+          "state": {
+            "file": "aws/IAM (4, 13, 23).md",
+            "mode": "source"
+          }
+        }
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "e81d7dcc10a9145d",
+    "type": "split",
+    "children": [
+      {
+        "id": "5fc0b136138e5292",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "ed936c00efe9920b",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {}
+            }
+          },
+          {
+            "id": "18cf96548e2f7638",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "dynamodb",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": true,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 226
+  },
+  "right": {
+    "id": "b7950e5ae864d2c6",
+    "type": "split",
+    "children": [
+      {
+        "id": "9dd7421345b8c14b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "41b03dc631ca8e60",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "aws/IAM (4, 13, 23).md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "active": "76082cf73e43bd73",
+  "lastOpenFiles": [
+    "aws/IAM (4, 13, 23).md",
+    "aws/High Availability & Scalability- ELB & ASG (8).md",
+    "aws/Containers on AWS- ECS, Fargate, ECR, & EKS (18).md",
+    "aws/AWS CloudFront & Global Accelerator (15).md",
+    "aws/Disaster Recovery and Migration (26).md",
+    "aws/Decoupling Applications- SQS, SNS, Kinesis, Active MQ (17).md",
+    "aws/Databases (21, 9, 19).md",
+    "to review.md",
+    "Dashboards and monitoring talk.md",
+    "Untitled.md"
+  ]
+}

@@ -1,0 +1,23 @@
+- Docker: software dev platform to deploy apps.
+	- apps packaged in containers. Can be run anywhere and will always run the same. Containers created from docker images, which are stored in docker repositories-- e.g. dockerHub: public, or Amazon ECR (elastic container registry): private, though also a pub version
+- how to run docker containers on AWS? Need container management platform. 3 choices...
+	- ECS: Amazon's own container platform
+	- Fargate: A's own *serverless* container platform
+	- EKS: A's managed Kubernetes platform (an open source container management platform)
+- ECS: elastic container service
+	- must provision and maintain the infrastructure (i.e. the EC2 instances). AWS handles starting/stopping containers, and has integrates w/ ALB
+	- overview
+		- ECS task roles: IAM roles for ECS tasks. Attached to tasks- so your docker container running your app. So each task can have specific role.
+		- EFS file systems can integrate w/ ECS (by mounting to ECS inst) and Fargate
+		- scaling for both ECS & Fargate: coudwatch metric for ECS CPU usage -> Cloudwatch alarm -> autoscaling launches new task
+			- If ECS, may also need to scale the EC2 inst. running the tasks. ECS Capacity Providers can scale this if you set it up.
+		- ECS rolling updates: set min & max healthy %, within those bounds will breate new (updated) tasks and terminate old, etc., for rolling updates.
+- Fargate
+	- simpler than ECS; serverless, so you do not provision the infrastructure. AWS just runs for you based on the CPU/RAM you need.
+- ECR: Elastic container registry
+	- store/manage/deploy containers on AWS
+	- fully integrated w/ ECS & IAM and backed by s3. Pay for what you use. Supports image vulnerability scanning, version, tag, image lifecycle.
+- EKS: Elastic Kubernetes Service
+	- for launching managed kubernetes clusters on AWS. 
+	- Kubernetes: open source system for auto deployment, scaling, and management of containerized (usually Dockerized) applications.
+		- Alternative to ECS: different API. Since kubernetes is open source it's cloud-agnostic.
